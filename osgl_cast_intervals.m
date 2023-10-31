@@ -3,20 +3,24 @@
 %
 % Oct-2023, Pat Welch, pat@mousebrains.com
 
-function [dives, climbs, surface] = osgl_cast_intervals(t, gliderstate)
+function [tDive, tClimb, tSurface, tBottom, tTop] = osgl_cast_intervals(t, gliderstate)
 arguments (Input)
     t (:,1) datetime {mustBeNonempty}
     gliderstate (:,1) uint8 {mustBeNonempty}
 end % arguments Input
 arguments (Output)
-    dives (:,2) datetime
-    climbs (:,2) datetime
-    surface (:,2) datetime
+    tDive (:,2) datetime
+    tClimb (:,2) datetime
+    tSurface (:,2) datetime
+    tBottom (:,2) datetime
+    tTop (:,2) datetime
 end % arguments Output
 
-dives = mkIntervals(t, bitand(gliderstate, 8) ~= 0);
-climbs = mkIntervals(t, bitand(gliderstate, 32) ~= 0);
-surface = mkIntervals(t, bitand(gliderstate, 1) ~= 0);
+tDive = mkIntervals(t, bitand(gliderstate, 8) ~= 0);
+tClimb = mkIntervals(t, bitand(gliderstate, 32) ~= 0);
+tSurface = mkIntervals(t, bitand(gliderstate, 1) ~= 0);
+tBottom = mkIntervals(t, bitand(gliderstate, 16) ~= 0);
+tTop = mkIntervals(t, bitand(gliderstate, 4) ~= 0);
 end % osgl_cast_intervals
 
 function a = mkIntervals(t, q)
