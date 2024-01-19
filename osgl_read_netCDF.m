@@ -15,25 +15,19 @@
 % Jan-2019, Pat Welch, pat@mousebrains.com, switch to low level interface
 % for speed reasons
 
-function a = osgl_read_netCDF(fn, varargin)
+function a = osgl_read_netCDF(fn, names)
 arguments (Input)
     fn string {mustBeFile} % Input filename
 end % arguments Input
 arguments (Input,Repeating)
-    varargin % Optional arguments
+    names (:,1) string % Optional variable names
 end % arguments Repeating
 arguments (Output)
     a struct % Output structure of data read from fn
 end % arguments output
 
-names = cell(numel(varargin),1); % Pre-allocate
-
-for i = 1:numel(varargin)
-    item = string(varargin{i});
-    names{i} = item(:);
-end % for i
-
-names = string(names); % Convert to an array of strings from a cell array
+names = cellfun(@(x) x(:), names, "UniformOutput", false); % Make sure any arrays are in the same orientation
+names = string(vertcat(names{:}));
 
 ncid = netcdf.open(fn); % Open the netCDF file
 cleanUpObj = onCleanup(@() netcdf.close(ncid)); % In case of errors/warnings/...
@@ -41,6 +35,7 @@ cleanUpObj = onCleanup(@() netcdf.close(ncid)); % In case of errors/warnings/...
 if isempty(names)
     [names, varids] = loadNames(ncid);
 else
+    names = unique(names); % No duplicates
     [names, varids] = getVarIDs(ncid, names);
 end % if
 
@@ -66,6 +61,14 @@ end % if
 end % osgl_read_netCDF
 
 function [names, varids] = loadNames(ncid)
+arguments (Input)
+    ncid double % NetCDF file id from netcdf.open
+end % arguments Input
+arguments (Output)
+    names (:,1) string  % Variable names in NetCDF file
+    varids (:,1) double % Variable ids in ncid
+end % arguments Output
+
 [~, n] = netcdf.inq(ncid); % Get the number of variables
 names = cell(n,1);
 varids = zeros(size(names)) - 1;
@@ -84,6 +87,15 @@ varids = varids(msk);
 end % loadNames
 
 function [names, varids] = getVarIDs(ncid, names)
+arguments (Input)
+    ncid double % NetCDF file id from netcdf.open
+    names (:,1) string  % Variable names to get from the NetCDF file
+end % arguments Input
+arguments (Output)
+    names (:,1) string  % Variable names to get from the NetCDF file
+    varids (:,1) double % Variable ids in ncid
+end % arguments Output
+
 varids = zeros(size(names));
 for i = 1:numel(names)
     varids(i) = netcdf.inqVarID(ncid, names(i));
