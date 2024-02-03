@@ -4,7 +4,7 @@
 % This has been tested with TWR Slocum firmware versions:
 %  10.8
 %
-% tbl must contain at least four columns:
+% tbl must contain at least two columns:
 %  m_present_time
 %  cc_behavior_state
 %
