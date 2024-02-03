@@ -53,7 +53,7 @@ gps = a(a.m_gps_status == 0 & abs(a.m_gps_lat) <= 90 & abs(a.m_gps_lon) <= 180, 
 gps.t0 = [NaT; gps.t(1:end-1)]; % Previous valid GPS fix time
 gps.dt = seconds(gps.t - gps.t0); % Time between valid GPS fixes in seconds
 
-a.t0 = interp1(gps.t, gps.t0, flt.t, "previous", "extrap"); % Previous GPS fix time
+a.t0 = interp1(gps.t, gps.t0, a.t, "previous", "extrap"); % Previous GPS fix time
 a.dt = seconds(a.t - a.t0); % Time from previous GPS fix in seconds
 
 dr = a(abs(a.m_lat) <= 90 & abs(a.m_lon) <= 180, ["t", "m_lat", "m_lon"]); % Valid dead reckoned rows
