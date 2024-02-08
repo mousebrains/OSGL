@@ -41,7 +41,7 @@ ix = ix(flt.m_present_time(ix) < posixtime(datetime() + years(1))); % Drop >=now
 % unique sorted, and within sane time ranges
 % We can also map a back to flt via ix!!!!
 a = flt(ix,["m_present_time", "m_lat", "m_lon", "m_gps_lat", "m_gps_lon", "m_gps_status"]);
-a.t = datetime(a.m_present_time, "ConvertFrom", "posixtime"); % There should be no nat values given constraints
+a.time = datetime(a.m_present_time, "ConvertFrom", "posixtime"); % There should be no nat values given constraints
 
 if qDegMin
     for name = ["m_lat", "m_lon", "m_gps_lat", "m_gps_lon"]
@@ -49,40 +49,39 @@ if qDegMin
     end % for name
 end % if qDegMin
 
-gps = a(a.m_gps_status == 0 & abs(a.m_gps_lat) <= 90 & abs(a.m_gps_lon) <= 180, ["t", "m_gps_lat", "m_gps_lon"]);
-gps.t0 = [NaT; gps.t(1:end-1)]; % Previous valid GPS fix time
-gps.dt = seconds(gps.t - gps.t0); % Time between valid GPS fixes in seconds
+gps = a(a.m_gps_status == 0 & abs(a.m_gps_lat) <= 90 & abs(a.m_gps_lon) <= 180, ["time", "m_gps_lat", "m_gps_lon"]);
+gps.t0 = [NaT; gps.time(1:end-1)]; % Previous valid GPS fix time
+gps.dt = seconds(gps.time - gps.t0); % Time between valid GPS fixes in seconds
 
-a.t0 = interp1(gps.t, gps.t0, a.t, "previous", "extrap"); % Previous GPS fix time
-a.dt = seconds(a.t - a.t0); % Time from previous GPS fix in seconds
+a.t0 = interp1(gps.time, gps.t0, a.time, "previous", "extrap"); % Previous GPS fix time
+a.dt = seconds(a.time - a.t0); % Time from previous GPS fix in seconds
 
-dr = a(abs(a.m_lat) <= 90 & abs(a.m_lon) <= 180, ["t", "m_lat", "m_lon"]); % Valid dead reckoned rows
+dr = a(abs(a.m_lat) <= 90 & abs(a.m_lon) <= 180, ["time", "m_lat", "m_lon"]); % Valid dead reckoned rows
 
-gps.lat = interp1(dr.t(2:end), dr.m_lat(1:end-1), gps.t, "previous", "extrap"); % Previous valid DR lat
-gps.lon = interp1(dr.t(2:end), dr.m_lon(1:end-1), gps.t, "previous", "extrap"); % Previous valid DR lon
+gps.lat = interp1(dr.time(2:end), dr.m_lat(1:end-1), gps.time, "previous", "extrap"); % Previous valid DR lat
+gps.lon = interp1(dr.time(2:end), dr.m_lon(1:end-1), gps.time, "previous", "extrap"); % Previous valid DR lon
 
 gps.dLatdt = (gps.m_gps_lat - gps.lat) ./ gps.dt; % Rate of change from DR to GPS fix
 gps.dLondt = (gps.m_gps_lon - gps.lon) ./ gps.dt;
 
-a.dLatdt = interp1(gps.t, gps.dLatdt, a.t, "next", "extrap"); % rate of change for each DR time
-a.dLondt = interp1(gps.t, gps.dLondt, a.t, "next", "extrap");
+a.dLatdt = interp1(gps.time, gps.dLatdt, a.time, "next", "extrap"); % rate of change for each DR time
+a.dLondt = interp1(gps.time, gps.dLondt, a.time, "next", "extrap");
 
 q = ~isnan(a.m_gps_lat); % No adjustment to m_lat/lon when at a valid GPS fix
 a.dLatdt(q) = 0;
 a.dLondt(q) = 0;
 
-a.lat = a.m_lat + a.dLatdt .* a.dt;
+a.lat = a.m_lat + a.dLatdt .* a.dt; % Adjusted lat/lon
 a.lon = a.m_lon + a.dLondt .* a.dt;
+
+qMissing = isnan(a.lat) | isnan(a.lon); % Lat/lons which are not valid
+qOkay = ~qMissing;
+
+a.lat(qMissing) = interp1(a.time(qOkay), a.lat(qOkay), a.time(qMissing), "linear"); % Fill in missing lat/lon
+a.lon(qMissing) = interp1(a.time(qOkay), a.lon(qOkay), a.time(qMissing), "linear");
 
 lat = nan(size(flt,1),1);
 lon = nan(size(flt,1),1);
 lat(ix) = a.lat;
 lon(ix) = a.lon;
-
-% Now interpolate nans linearly between timestamps
-qMissing = isnan(a.lat) | isnan(a.lon);
-qOkay = ~qMissing;
-
-lat(qMissing) = interp1(flt.t(qOkay), lat(qOkay), flt.t(qMissing), "linear");
-lon(qMissing) = interp1(flt.t(qOkay), lon(qOkay), flt.t(qMissing), "linear");
 end % osgl_adjust_lat_lon
