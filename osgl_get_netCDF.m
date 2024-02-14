@@ -191,11 +191,16 @@ switch lower(dtUnits) % The part before since
         return
 end % switch
 
-fmt = "^\s*(\d{4})-(\d{1,2})-(\d{1,2})(\s+\d{1,2}:\d{1,2}:\d{1,2}([.]\d*|)(\s+([A-Za-z/_]+|[+-]?\d{1,2}([:]?\d{1,2}|))|)|)\s*$";
-tfmt = "^\s+(\d{1,2}):(\d{1,2}):(\d{1,2}([.]?\d*|))(\s+([A-Za-z/_]+|[+-]?\d{1,2}([:]?\d{1,2}|))|)$";
+fmt = strjoin([
+    "^(\d{4})-(\d{1,2})-(\d{1,2})", % yyyy-mm-dd
+    "(|(\s+|[Tt])\d{1,2}:\d{1,2}:\d{1,2}(|[.]\d*))", % (\s|T)HH:MM:SS.ssss
+    "(|\s+([A-Za-z/_]+|[+-]?\d{1,2}(|[:]?\d{1,2})))", % (UTC|[+-]00:00)
+    "\s*$"], "");
+tfmt = "^[Tt\s]+(\d{1,2}):(\d{1,2}):(\d{1,2}([.]?\d*|))(\s+([A-Za-z/_]+|[+-]?\d{1,2}([:]?\d{1,2}|))|)$";
 
 tokens = regexp(timeStr, fmt, "tokens", "once");
 if isempty(tokens)
+    fmt
     warning("Unable to parse time string, %s, for %s", ...
         timeStr, netcdf.inqVar(ncid, varid));
     return
