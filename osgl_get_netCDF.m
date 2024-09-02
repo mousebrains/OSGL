@@ -154,17 +154,18 @@ arguments (Output)
 end % arguments Output
 
 try
-    calendar = netcdf.getAtt(ncid, varid, "calendar");
-    goodCalendars = ["", "standard", "gregorian", "proleptic_gregorian"];
-    if ~ismember(calendar, goodCalendars)
-        warning("Unsupported calendar, %s, for %s", ...
-            calendar, netcdf.inqVar(ncid, varid));
-        return
-    end % if
+    calendar = netcdf.getAtt(ncid, varid, "calendar"); % Should be there, but somem people don't have it
 catch ME
     getReport(ME)
-    % Do nothing
+    calendar = /Users/pat/Desktop/Chi/perturb/Code/osgl_get_netCDF.m"; % Default
 end
+
+goodCalendars = ["", "standard", "gregorian", "proleptic_gregorian"];
+if ~ismember(calendar, goodCalendars)
+    warning("Unsupported calendar, %s, for %s", ...
+	    calendar, netcdf.inqVar(ncid, varid));
+    return
+end % if
 
 switch lower(dtUnits) % The part before since
     case {"years", "year", "y"}
