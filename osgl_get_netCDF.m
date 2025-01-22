@@ -154,18 +154,17 @@ arguments (Output)
 end % arguments Output
 
 try
-    calendar = netcdf.getAtt(ncid, varid, "calendar"); % Should be there, but somem people don't have it
+    calendar = netcdf.getAtt(ncid, varid, "calendar");
+    goodCalendars = ["", "standard", "gregorian", "proleptic_gregorian"];
+    if ~ismember(calendar, goodCalendars)
+        warning("Unsupported calendar, %s, for %s", ...
+            calendar, netcdf.inqVar(ncid, varid));
+        return
+    end % if
 catch ME
     getReport(ME)
-    calendar = "proleptic_gregorian"; % Default
+    % Do nothing
 end
-
-goodCalendars = ["", "standard", "gregorian", "proleptic_gregorian"];
-if ~ismember(calendar, goodCalendars)
-    warning("Unsupported calendar, %s, for %s", ...
-	    calendar, netcdf.inqVar(ncid, varid));
-    return
-end % if
 
 switch lower(dtUnits) % The part before since
     case {"years", "year", "y"}
@@ -192,16 +191,11 @@ switch lower(dtUnits) % The part before since
         return
 end % switch
 
-fmt = strjoin([
-    "^(\d{4})-(\d{1,2})-(\d{1,2})", % yyyy-mm-dd
-    "(|(\s+|[Tt])\d{1,2}:\d{1,2}:\d{1,2}(|[.]\d*))", % (\s|T)HH:MM:SS.ssss
-    "(|\s+([A-Za-z/_]+|[+-]?\d{1,2}(|[:]?\d{1,2})))", % (UTC|[+-]00:00)
-    "\s*$"], "");
-tfmt = "^[Tt\s]+(\d{1,2}):(\d{1,2}):(\d{1,2}([.]?\d*|))(\s+([A-Za-z/_]+|[+-]?\d{1,2}([:]?\d{1,2}|))|)$";
+fmt = "^\s*(\d{4})-(\d{1,2})-(\d{1,2})[\sT]?(\s*\d{1,2}:\d{1,2}:\d{1,2}([.]\d*|)(\s+([A-Za-z/_]+|[+-]?\d{1,2}([:]?\d{1,2}|))|)|)\s*$";
+tfmt = "^\s*(\d{1,2}):(\d{1,2}):(\d{1,2}([.]?\d*|))(\s+([A-Za-z/_]+|[+-]?\d{1,2}([:]?\d{1,2}|))|)$";
 
 tokens = regexp(timeStr, fmt, "tokens", "once");
 if isempty(tokens)
-    fmt
     warning("Unable to parse time string, %s, for %s", ...
         timeStr, netcdf.inqVar(ncid, varid));
     return
