@@ -45,7 +45,7 @@ a.time = datetime(a.m_present_time, "ConvertFrom", "posixtime"); % There should 
 
 if qDegMin
     for name = ["m_lat", "m_lon", "m_gps_lat", "m_gps_lon"]
-        a.(name) = osgl_mkDegrees(a.(name));
+        flt.(name) = osgl_mkDegrees(flt.(name));
     end % for name
 end % if qDegMin
 
